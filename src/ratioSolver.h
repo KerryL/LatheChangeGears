@@ -37,8 +37,9 @@ private:
 	double ComputeActualRatio(const std::vector<unsigned int>& drivingGears, const std::vector<unsigned int>& drivenGears) const;
 
 	static void ComputeError(const double& desiredPitchMM, Results& results);
-	static std::vector<std::vector<unsigned int>> GeneratePermutations(const unsigned int& length, const unsigned int& base);
+	static std::vector<std::vector<unsigned int>> GenerateCombinations(const unsigned int& length, const unsigned int& base);
 	static unsigned int CountCombinations(const unsigned int& length, const unsigned int& base);
+	static std::vector<unsigned int> GetRemainingSet(const std::vector<unsigned int>& fullSet, const std::vector<unsigned int>& alreadyTaken);
 };
 
 #endif// RATIO_SOLVER_H_

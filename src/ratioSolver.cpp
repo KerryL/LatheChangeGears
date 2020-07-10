@@ -26,30 +26,42 @@ RatioSolver::Results RatioSolver::SolveConstrained(const double& pitchMM) const
 	std::vector<unsigned int> bestDrivenGears;
 	for (unsigned int numReductions = 1; numReductions <= config.maxReductions; ++numReductions)
 	{
-		const auto permutations(GeneratePermutations(2 * numReductions, config.availableGears.size()));
-		std::vector<unsigned int> drivingGears(numReductions);
-		std::vector<unsigned int> drivenGears(numReductions);
-		for (const auto& p : permutations)
+		const auto combinations(GenerateCombinations(2 * numReductions, config.availableGears.size()));
+		const auto driving(GenerateCombinations(numReductions, 2 * numReductions));// indices of c
+		for (const auto& c : combinations)
 		{
-			for (unsigned int i = 0; i < p.size() / 2; ++i)
+			for (const auto& dcIndices : driving)
 			{
-				drivingGears[i] = config.availableGears[p[i]];
-				drivenGears[i] = config.availableGears[p[i + p.size() / 2]];
-			}
+				std::vector<unsigned int> drivingGears(numReductions);
+				std::vector<unsigned int> drivenGears(numReductions);
 
-			const double actualRatio(ComputeActualRatio(drivingGears, drivenGears));
-			const double absError(fabs(actualRatio - desiredRatio));
-			if (absError < minAbsError)
-			{
-				bestDrivingGears = drivingGears;
-				bestDrivenGears = drivenGears;
-				minAbsError = absError;
+				std::vector<unsigned int> dc(dcIndices.size());
+				for (unsigned int i = 0; i < dc.size(); ++i)
+					dc[i] = c[dcIndices[i]];
+
+				const auto driven(GetRemainingSet(c, dc));// indices of availableGears
+				for (unsigned int i = 0; i < dcIndices.size(); ++i)
+				{
+					drivingGears[i] = config.availableGears[c[dcIndices[i]]];
+					drivenGears[i] = config.availableGears[driven[i]];
+				}
+
+				const double actualRatio(ComputeActualRatio(drivingGears, drivenGears));
+				const double absError(fabs(actualRatio - desiredRatio));
+				if (absError < minAbsError)
+				{
+					bestDrivingGears = drivingGears;
+					bestDrivenGears = drivenGears;
+					minAbsError = absError;
+				}
 			}
 		}
 	}
 
 	const double bestRatio(ComputeActualRatio(bestDrivingGears, bestDrivenGears));
-	results.actualPitchMM = bestRatio * config.lead / 25.4;// TODO:  Check this
+	results.actualPitchMM = 25.4 / config.lead / bestRatio;
+	results.drivingGears = bestDrivingGears;
+	results.drivenGears = bestDrivenGears;
 	ComputeError(pitchMM, results);
 
 	return results;
@@ -72,11 +84,12 @@ void RatioSolver::ComputeError(const double& desiredPitchMM, Results& results)
 	results.errorInchPerFoot = results.errorInchPerThread / (desiredPitchMM / 25.4) * 12.0;
 }
 
-// Convention is ratio = driving gears / driven gears, so larger values indicate a higher resulting threads/distance (finer thread pitch)
+// Convention is ratio = driven gears / driving gears, so larger values indicate a higher
+// resulting number of threads per distance (finer thread pitch).
 double RatioSolver::ComputeDesiredRatio(const double& desiredPitchMM) const
 {
 	const double lathePitchMM(25.4 / config.lead);
-	return desiredPitchMM / lathePitchMM;
+	return lathePitchMM / desiredPitchMM;
 }
 
 double RatioSolver::ComputeActualRatio(const std::vector<unsigned int>& drivingGears, const std::vector<unsigned int>& drivenGears) const
@@ -84,16 +97,16 @@ double RatioSolver::ComputeActualRatio(const std::vector<unsigned int>& drivingG
 	assert(drivingGears.size() == drivenGears.size());// For correctness
 
 	double ratio(1.0);
-	for (const auto& g : drivingGears)
+	for (const auto& g : drivenGears)
 		ratio *= g;
 
-	for (const auto& g : drivenGears)
+	for (const auto& g : drivingGears)
 		ratio /= g;
 
 	return ratio;
 }
 
-std::vector<std::vector<unsigned int>> RatioSolver::GeneratePermutations(const unsigned int& length, const unsigned int& base)
+std::vector<std::vector<unsigned int>> RatioSolver::GenerateCombinations(const unsigned int& length, const unsigned int& base)
 {
 	std::vector<std::vector<unsigned int>> permutations(CountCombinations(length, base), std::vector<unsigned int>(length));
 	std::string bitmask(length, 1);// leading 1's
@@ -118,5 +131,13 @@ std::vector<std::vector<unsigned int>> RatioSolver::GeneratePermutations(const u
 unsigned int RatioSolver::CountCombinations(const unsigned int& length, const unsigned int& base)
 {
 	assert(length <= base);
-	return static_cast<unsigned int>(tgamma(base + 1) / (tgamma(length + 1) * tgamma(base - length + 1)));
+	// Equivalent to "n! / (k! * (n - k)!)"
+	return static_cast<unsigned int>(tgamma(base + 1) / (tgamma(length + 1) * tgamma(base - length + 1)) + 0.5);// +0.5 to avoid truncation due to floating point math
+}
+
+std::vector<unsigned int> RatioSolver::GetRemainingSet(const std::vector<unsigned int>& fullSet, const std::vector<unsigned int>& alreadyTaken)
+{
+	std::vector<unsigned int> result(fullSet.size() - alreadyTaken.size());
+	std::set_difference(fullSet.begin(), fullSet.end(), alreadyTaken.begin(), alreadyTaken.end(), result.begin());
+	return result;
 }
