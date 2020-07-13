@@ -27,8 +27,8 @@ public:
 		double errorInchPerFoot;// [in/ft]
 	};
 
-	Results SolveConstrained(const double& pitchMM) const;
-	Results SolveUnconstrained(const double& pitchMM) const;
+	Results SolveAvailable(const double& pitchMM) const;
+	Results SolveAvailablePlus(const double& pitchMM) const;
 
 private:
 	const LatheChangeGearsConfig config;

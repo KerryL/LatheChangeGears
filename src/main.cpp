@@ -85,11 +85,11 @@ int main(int argc, char *argv[])
 	if (configFile.GetConfig().availableGears.size() > 1)
 	{
 		std::cout << "\nUsing only available gear options:\n";
-		PrintResults(solver.SolveConstrained(args.desiredPitchMM));
+		PrintResults(solver.SolveAvailable(args.desiredPitchMM));
 	}
 
 	std::cout << "\nUsing availalbe gear options plus any one additional gear up to " << configFile.GetConfig().maxGearTeeth << " teeth:\n";
-	PrintResults(solver.SolveUnconstrained(args.desiredPitchMM));
+	PrintResults(solver.SolveAvailablePlus(args.desiredPitchMM));
 
 	return 0;
 }

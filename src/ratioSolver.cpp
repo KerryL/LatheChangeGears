@@ -15,7 +15,7 @@ RatioSolver::RatioSolver(const LatheChangeGearsConfig& config) : config(config)
 {
 }
 
-RatioSolver::Results RatioSolver::SolveConstrained(const double& pitchMM) const
+RatioSolver::Results RatioSolver::SolveAvailable(const double& pitchMM) const
 {
 	Results results;
 
@@ -67,7 +67,7 @@ RatioSolver::Results RatioSolver::SolveConstrained(const double& pitchMM) const
 	return results;
 }
 
-RatioSolver::Results RatioSolver::SolveUnconstrained(const double& pitchMM) const
+RatioSolver::Results RatioSolver::SolveAvailablePlus(const double& pitchMM) const
 {
 	Results results;
 	results.actualPitchMM = 2.0;
