@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 		PrintResults(solver.SolveConstrained(args.desiredPitchMM));
 	}
 
-	std::cout << "\nUsing any gears up to " << configFile.GetConfig().maxGearTeeth << " teeth:\n";
+	std::cout << "\nUsing availalbe gear options plus any one additional gear up to " << configFile.GetConfig().maxGearTeeth << " teeth:\n";
 	PrintResults(solver.SolveUnconstrained(args.desiredPitchMM));
 
 	return 0;
