@@ -36,6 +36,9 @@ private:
 	double ComputeDesiredRatio(const double& desiredPitchMM) const;
 	double ComputeActualRatio(const std::vector<unsigned int>& drivingGears, const std::vector<unsigned int>& drivenGears) const;
 
+	void FindBestConfiguration(const double& desiredRatio, const std::vector<unsigned int>& availableGears,
+		double& minAbsError, std::vector<unsigned int>& bestDrivingGears, std::vector<unsigned int>& bestDrivenGears) const;
+
 	static void ComputeError(const double& desiredPitchMM, Results& results);
 	static std::vector<std::vector<unsigned int>> GenerateCombinations(const unsigned int& length, const unsigned int& base);
 	static unsigned int CountCombinations(const unsigned int& length, const unsigned int& base);

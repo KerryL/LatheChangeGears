@@ -10,6 +10,7 @@
 #include <cassert>
 #include <algorithm>
 #include <string>
+#include <numeric>
 
 RatioSolver::RatioSolver(const LatheChangeGearsConfig& config) : config(config)
 {
@@ -21,12 +22,55 @@ RatioSolver::Results RatioSolver::SolveAvailable(const double& pitchMM) const
 
 	// Brute force for now
 	const double desiredRatio(ComputeDesiredRatio(pitchMM));
-	double minAbsError(10.0 * desiredRatio);// something big to start with
+	double minAbsError;
 	std::vector<unsigned int> bestDrivingGears;
 	std::vector<unsigned int> bestDrivenGears;
+	FindBestConfiguration(desiredRatio, config.availableGears, minAbsError, bestDrivingGears, bestDrivenGears);
+	
+	const double bestRatio(ComputeActualRatio(bestDrivingGears, bestDrivenGears));
+	results.actualPitchMM = 25.4 / config.lead / bestRatio;
+	results.drivingGears = bestDrivingGears;
+	results.drivenGears = bestDrivenGears;
+	ComputeError(pitchMM, results);
+
+	return results;
+}
+
+RatioSolver::Results RatioSolver::SolveAvailablePlus(const double& pitchMM) const
+{
+	Results results;
+	const unsigned int minToothCount(16);
+	std::vector<unsigned int> additionalGears(config.maxGearTeeth - minToothCount + 1);
+	std::iota(additionalGears.begin(), additionalGears.end(), minToothCount);
+
+	// Brute force for now
+	const double desiredRatio(ComputeDesiredRatio(pitchMM));
+	double minAbsError;
+	std::vector<unsigned int> bestDrivingGears;
+	std::vector<unsigned int> bestDrivenGears;
+	for (const auto& plusGear : additionalGears)
+	{
+		std::vector<unsigned int> availableGears(config.availableGears);
+		availableGears.push_back(plusGear);
+		FindBestConfiguration(desiredRatio, availableGears, minAbsError, bestDrivingGears, bestDrivenGears);
+	}
+
+	const double bestRatio(ComputeActualRatio(bestDrivingGears, bestDrivenGears));
+	results.actualPitchMM = 25.4 / config.lead / bestRatio;
+	results.drivingGears = bestDrivingGears;
+	results.drivenGears = bestDrivenGears;
+	ComputeError(pitchMM, results);
+
+	return results;
+}
+
+void RatioSolver::FindBestConfiguration(const double& desiredRatio, const std::vector<unsigned int>& availableGears,
+	double& minAbsError, std::vector<unsigned int>& bestDrivingGears, std::vector<unsigned int>& bestDrivenGears) const
+{
+	minAbsError = 10.0 * desiredRatio;// something big to start with
 	for (unsigned int numReductions = 1; numReductions <= config.maxReductions; ++numReductions)
 	{
-		const auto combinations(GenerateCombinations(2 * numReductions, config.availableGears.size()));
+		const auto combinations(GenerateCombinations(2 * numReductions, availableGears.size()));
 		const auto driving(GenerateCombinations(numReductions, 2 * numReductions));// indices of c
 		for (const auto& c : combinations)
 		{
@@ -42,8 +86,8 @@ RatioSolver::Results RatioSolver::SolveAvailable(const double& pitchMM) const
 				const auto driven(GetRemainingSet(c, dc));// indices of availableGears
 				for (unsigned int i = 0; i < dcIndices.size(); ++i)
 				{
-					drivingGears[i] = config.availableGears[c[dcIndices[i]]];
-					drivenGears[i] = config.availableGears[driven[i]];
+					drivingGears[i] = availableGears[c[dcIndices[i]]];
+					drivenGears[i] = availableGears[driven[i]];
 				}
 
 				const double actualRatio(ComputeActualRatio(drivingGears, drivenGears));
@@ -57,23 +101,6 @@ RatioSolver::Results RatioSolver::SolveAvailable(const double& pitchMM) const
 			}
 		}
 	}
-
-	const double bestRatio(ComputeActualRatio(bestDrivingGears, bestDrivenGears));
-	results.actualPitchMM = 25.4 / config.lead / bestRatio;
-	results.drivingGears = bestDrivingGears;
-	results.drivenGears = bestDrivenGears;
-	ComputeError(pitchMM, results);
-
-	return results;
-}
-
-RatioSolver::Results RatioSolver::SolveAvailablePlus(const double& pitchMM) const
-{
-	Results results;
-	results.actualPitchMM = 2.0;
-	ComputeError(pitchMM, results);
-
-	return results;
 }
 
 void RatioSolver::ComputeError(const double& desiredPitchMM, Results& results)
