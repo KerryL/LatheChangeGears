@@ -27,8 +27,8 @@ public:
 		double errorInchPerFoot;// [in/ft]
 	};
 
-	Results SolveAvailable(const double& pitchMM) const;
-	Results SolveAvailablePlus(const double& pitchMM) const;
+	std::vector<RatioSolver::Results> SolveAvailable(const double& pitchMM) const;
+	std::vector<RatioSolver::Results> SolveAvailablePlus(const double& pitchMM) const;
 
 private:
 	const LatheChangeGearsConfig config;
@@ -36,8 +36,7 @@ private:
 	double ComputeDesiredRatio(const double& desiredPitchMM) const;
 	double ComputeActualRatio(const std::vector<unsigned int>& drivingGears, const std::vector<unsigned int>& drivenGears) const;
 
-	void FindBestConfiguration(const double& desiredRatio, const std::vector<unsigned int>& availableGears,
-		double& minAbsError, std::vector<unsigned int>& bestDrivingGears, std::vector<unsigned int>& bestDrivenGears) const;
+	void FindBestConfiguration(const double& desiredRatio, const std::vector<unsigned int>& availableGears, std::vector<Results>& results) const;
 
 	static void ComputeError(const double& desiredPitchMM, Results& results);
 	static std::vector<std::vector<unsigned int>> GenerateCombinations(const unsigned int& length, const unsigned int& base);

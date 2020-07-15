@@ -16,6 +16,7 @@ void LatheChangeGearsConfigFile::BuildConfigItems()
 	AddConfigItem(_T("MAX_REDUCTIONS"), config.maxReductions);
 	AddConfigItem(_T("MAX_TEETH"), config.maxGearTeeth);
 	AddConfigItem(_T("LEAD"), config.lead);
+	AddConfigItem(_T("SHOW_TOP"), config.showBestCount);
 }
 
 void LatheChangeGearsConfigFile::AssignDefaults()
@@ -23,6 +24,7 @@ void LatheChangeGearsConfigFile::AssignDefaults()
 	config.maxReductions = 0;
 	config.maxGearTeeth = 120;
 	config.lead = 0;
+	config.showBestCount = 10;
 }
 
 bool LatheChangeGearsConfigFile::ConfigIsOK()
@@ -38,6 +40,12 @@ bool LatheChangeGearsConfigFile::ConfigIsOK()
 	{
 		ok = false;
 		outStream << GetKey(config.lead) << " must be specified and must be greater than zero" << std::endl;
+	}
+
+	if (config.showBestCount == 0)
+	{
+		ok = false;
+		outStream << GetKey(config.showBestCount) << " must be greater than zero" << std::endl;
 	}
 
 	return ok;

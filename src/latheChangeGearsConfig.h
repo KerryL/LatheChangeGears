@@ -15,6 +15,8 @@ struct LatheChangeGearsConfig
 	unsigned int maxReductions;// maximum selected gears = 2 * maxReductions
 	unsigned int maxGearTeeth;
 	double lead;// [rev/in]
+
+	unsigned int showBestCount;
 };
 
 #endif// LATHE_CHANGE_GEARS_CONFIG_H_

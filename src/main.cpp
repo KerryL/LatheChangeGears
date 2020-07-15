@@ -10,6 +10,7 @@
 // Standard C++ headers
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 
 struct Arguments
 {
@@ -48,24 +49,66 @@ void PrintUsage(const std::string& calledAs)
 	std::cout << "Usage:  " << calledAs << " <config file> --mm=<desired metric pitch>\n" << std::endl;
 }
 
-void PrintResults(const RatioSolver::Results& results)
+void PrintInColumns(const std::vector<std::string>& values, const std::vector<unsigned int>& widths)
 {
-	std::cout << "Actual achieved pitch = " << results.actualPitchMM << " mm/thread\n";
+	assert(values.size() == widths.size());
 
-	std::cout << "\nDriving gears:\n";
-	for (const auto& t : results.drivingGears)
-		std::cout << "  " << t << "\n";
+	std::ios_base::fmtflags flags(std::cout.flags());
 
-	std::cout << "\nDriven gears:\n";
-	for (const auto& t : results.drivenGears)
-		std::cout << "  " << t << "\n";
+	for (unsigned int i = 0; i < values.size(); ++i)
+		std::cout << std::setw(widths[i]) << std::setfill(' ') << values[i];
+	std::cout << '\n';
 
-	std::cout
-		<< "\nPercent Error = " << results.errorPercent
-		<< "\nError (mm/thread) = " << results.errorMMPerThread
-		<< "\nError (in/thread) = " << results.errorInchPerThread
-		<< "\nError (in/ft) = " << results.errorInchPerFoot
-		<< std::endl;
+	std::cout.flags(flags);
+}
+
+void PrintResults(const std::vector<RatioSolver::Results>& results)
+{
+	const std::vector<unsigned int> widths = { 17, 15, 15, 15, 15 };
+	const std::vector<std::string> headings = { "Actual pitch (mm)", "Driving Gears", "Driven Gears", "Error(%)", "Error(in/ft)" };
+	PrintInColumns(headings, widths);
+
+	for (const auto& r : results)
+	{
+		std::vector<std::string> data(widths.size());
+		std::ostringstream ss;
+		ss << r.actualPitchMM;
+		data[0] = ss.str();
+
+		ss.clear();
+		ss.str("");
+		for (auto& g : r.drivingGears)
+		{
+			if (!ss.str().empty())
+				ss << ", ";
+			ss << g;
+		}
+		data[1] = ss.str();
+
+		ss.clear();
+		ss.str("");
+		for (auto& g : r.drivenGears)
+		{
+			if (!ss.str().empty())
+				ss << ", ";
+			ss << g;
+		}
+		data[2] = ss.str();
+
+		ss.clear();
+		ss.str("");
+		ss << r.errorPercent;
+		data[3] = ss.str();
+
+		ss.clear();
+		ss.str("");
+		ss << r.errorInchPerFoot;
+		data[4] = ss.str();
+
+		PrintInColumns(data, widths);
+	}
+
+	std::cout << std::endl;
 }
 
 int main(int argc, char *argv[])

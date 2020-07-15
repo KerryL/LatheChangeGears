@@ -16,58 +16,55 @@ RatioSolver::RatioSolver(const LatheChangeGearsConfig& config) : config(config)
 {
 }
 
-RatioSolver::Results RatioSolver::SolveAvailable(const double& pitchMM) const
+std::vector<RatioSolver::Results> RatioSolver::SolveAvailable(const double& pitchMM) const
 {
-	Results results;
+	std::vector<Results> results(config.showBestCount);
 
-	// Brute force for now
 	const double desiredRatio(ComputeDesiredRatio(pitchMM));
-	double minAbsError;
 	std::vector<unsigned int> bestDrivingGears;
 	std::vector<unsigned int> bestDrivenGears;
-	FindBestConfiguration(desiredRatio, config.availableGears, minAbsError, bestDrivingGears, bestDrivenGears);
+	FindBestConfiguration(desiredRatio, config.availableGears, results);
 	
-	const double bestRatio(ComputeActualRatio(bestDrivingGears, bestDrivenGears));
-	results.actualPitchMM = 25.4 / config.lead / bestRatio;
-	results.drivingGears = bestDrivingGears;
-	results.drivenGears = bestDrivenGears;
-	ComputeError(pitchMM, results);
+	for (auto& r : results)
+	{
+		const double bestRatio(ComputeActualRatio(r.drivingGears, r.drivenGears));
+		r.actualPitchMM = 25.4 / config.lead / bestRatio;
+		ComputeError(pitchMM, r);
+	}
 
 	return results;
 }
 
-RatioSolver::Results RatioSolver::SolveAvailablePlus(const double& pitchMM) const
+std::vector<RatioSolver::Results> RatioSolver::SolveAvailablePlus(const double& pitchMM) const
 {
-	Results results;
+	std::vector<Results> results(config.showBestCount);
 	const unsigned int minToothCount(16);
 	std::vector<unsigned int> additionalGears(config.maxGearTeeth - minToothCount + 1);
 	std::iota(additionalGears.begin(), additionalGears.end(), minToothCount);
 
-	// Brute force for now
 	const double desiredRatio(ComputeDesiredRatio(pitchMM));
-	double minAbsError;
-	std::vector<unsigned int> bestDrivingGears;
-	std::vector<unsigned int> bestDrivenGears;
 	for (const auto& plusGear : additionalGears)
 	{
 		std::vector<unsigned int> availableGears(config.availableGears);
 		availableGears.push_back(plusGear);
-		FindBestConfiguration(desiredRatio, availableGears, minAbsError, bestDrivingGears, bestDrivenGears);
+		FindBestConfiguration(desiredRatio, availableGears, results);
 	}
 
-	const double bestRatio(ComputeActualRatio(bestDrivingGears, bestDrivenGears));
-	results.actualPitchMM = 25.4 / config.lead / bestRatio;
-	results.drivingGears = bestDrivingGears;
-	results.drivenGears = bestDrivenGears;
-	ComputeError(pitchMM, results);
+	for (auto& r : results)
+	{
+		const double bestRatio(ComputeActualRatio(r.drivingGears, r.drivenGears));
+		r.actualPitchMM = 25.4 / config.lead / bestRatio;
+		ComputeError(pitchMM, r);
+	}
 
 	return results;
 }
 
-void RatioSolver::FindBestConfiguration(const double& desiredRatio, const std::vector<unsigned int>& availableGears,
-	double& minAbsError, std::vector<unsigned int>& bestDrivingGears, std::vector<unsigned int>& bestDrivenGears) const
+void RatioSolver::FindBestConfiguration(const double& desiredRatio, const std::vector<unsigned int>& availableGears, std::vector<Results>& results) const
 {
-	minAbsError = 10.0 * desiredRatio;// something big to start with
+	std::vector<double> minAbsErrors(results.size(), 10.0 * desiredRatio);
+
+	// Brute force for now
 	for (unsigned int numReductions = 1; numReductions <= config.maxReductions; ++numReductions)
 	{
 		const auto combinations(GenerateCombinations(2 * numReductions, availableGears.size()));
@@ -92,11 +89,25 @@ void RatioSolver::FindBestConfiguration(const double& desiredRatio, const std::v
 
 				const double actualRatio(ComputeActualRatio(drivingGears, drivenGears));
 				const double absError(fabs(actualRatio - desiredRatio));
-				if (absError < minAbsError)
+				for (unsigned int i = 0; i < results.size(); ++i)
 				{
-					bestDrivingGears = drivingGears;
-					bestDrivenGears = drivenGears;
-					minAbsError = absError;
+					// Exclude gearsets identical to previously identified sets (can happen if available gears includes more than one of a size)
+					if (absError == minAbsErrors[i] &&
+						drivingGears == results[i].drivingGears &&
+						drivenGears == results[i].drivenGears)
+						break;
+
+					if (absError < minAbsErrors[i])
+					{
+						results.insert(results.begin() + i, Results());
+						results.erase(results.end() - 1);
+						results[i].drivingGears = drivingGears;
+						results[i].drivenGears = drivenGears;
+
+						minAbsErrors.insert(minAbsErrors.begin() + i, absError);
+						minAbsErrors.erase(minAbsErrors.end() - 1);
+						break;
+					}
 				}
 			}
 		}
