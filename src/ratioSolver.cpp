@@ -62,8 +62,6 @@ std::vector<RatioSolver::Results> RatioSolver::SolveAvailablePlus(const double& 
 
 void RatioSolver::FindBestConfiguration(const double& desiredRatio, const std::vector<unsigned int>& availableGears, std::vector<Results>& results) const
 {
-	std::vector<double> minAbsErrors(results.size(), 10.0 * desiredRatio);
-
 	// Brute force for now
 	for (unsigned int numReductions = 1; numReductions <= config.maxReductions; ++numReductions)
 	{
@@ -92,20 +90,18 @@ void RatioSolver::FindBestConfiguration(const double& desiredRatio, const std::v
 				for (unsigned int i = 0; i < results.size(); ++i)
 				{
 					// Exclude gearsets identical to previously identified sets (can happen if available gears includes more than one of a size)
-					if (absError == minAbsErrors[i] &&
+					if (absError == results[i].errorPercent &&
 						drivingGears == results[i].drivingGears &&
 						drivenGears == results[i].drivenGears)
 						break;
 
-					if (absError < minAbsErrors[i])
+					if (absError < results[i].errorPercent)
 					{
 						results.insert(results.begin() + i, Results());
 						results.erase(results.end() - 1);
 						results[i].drivingGears = drivingGears;
 						results[i].drivenGears = drivenGears;
-
-						minAbsErrors.insert(minAbsErrors.begin() + i, absError);
-						minAbsErrors.erase(minAbsErrors.end() - 1);
+						results[i].errorPercent = absError;
 						break;
 					}
 				}

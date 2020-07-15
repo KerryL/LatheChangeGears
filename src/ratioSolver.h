@@ -21,7 +21,7 @@ public:
 
 		double actualPitchMM;// [mm]
 
-		double errorPercent;
+		double errorPercent = 10000.0;// Also used as absolute error storage and so needs to be initialized to something large
 		double errorMMPerThread;// [mm]
 		double errorInchPerThread;// [in]
 		double errorInchPerFoot;// [in/ft]
